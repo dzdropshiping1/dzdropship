@@ -1,0 +1,57 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Order {
+  id                  String   @id @default(cuid())
+  customerName        String
+  customerPhone       String
+  customerWilaya      String
+  customerAddress     String
+  productName         String
+  source              String   // "ALIEXPRESS" or "LOCAL_WHOLESALER"
+  costPriceDzd        Float
+  sellingPriceDzd     Float
+  shippingPriceDzd    Float
+  paymentMethod       String   // "COD", "ONLINE", or "SPLIT"
+  onlineAmount        Float    @default(0.0) // deposit paid online via SofizPay
+  codAmount           Float    @default(0.0) // to be collected on delivery
+  paymentStatus       String   // "PENDING", "PAID", "PARTIALLY_PAID", "FAILED"
+  shippingStatus      String   // "PENDING", "SHIPPED", "DELIVERED", "RETURNED", "CANCELLED"
+  sofizPayPaymentId   String?  @unique
+  sofizPayCheckoutUrl String?
+  trackingCode        String?
+  userId              String?
+  user                User?    @relation(fields: [userId], references: [id])
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model User {
+  id                 String   @id @default(cuid())
+  email              String   @unique
+  password           String   // Hashed password
+  name               String
+  sofizPayPublicKey  String?  // SofizPay merchant public key (e.g. G...)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  orders             Order[]
+}
+
+model PaymentLog {
+  id             String   @id @default(cuid())
+  orderId        String
+  sofizPayId     String
+  amount         Float
+  status         String   // "PENDING", "COMPLETED", "FAILED"
+  paymentMethod  String   // "CIB", "EDAHABIYA"
+  reconciled     Boolean  @default(false)
+  reconciledAt   DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
